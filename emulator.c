@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <SDL2/SDL.h>
 #define SDL_MAIN_HANDLED
-#define SCALE 2
+#define SCALE 20
 
 typedef struct Chip8 {
     uint8_t memory[4096];
@@ -149,19 +149,42 @@ void cycle(Chip8 *emu) {
 int main(int argc, char* argv[]) {
 	Chip8 emulator;
 	init(&emulator);
-	// SDL_Init(SDL_INIT_VIDEO);
-    // SDL_Window* window = SDL_CreateWindow("Chip8",
-    //     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-    //     64*SCALE, 32*SCALE, SDL_WINDOW_SHOWN);
+	loadROM(&emulator, argv[1]);
 
-    // SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    // SDL_Texture* Texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, N, N);
+	SDL_Init(SDL_INIT_VIDEO);
+    SDL_Window* window = SDL_CreateWindow("Chip8",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        64*SCALE, 32*SCALE, SDL_WINDOW_SHOWN);
 
-	
-	// int simulation_running = 1;
-    // SDL_Event event;
-    // while(simulation_running) {
-	// 	//fetch-decode cycle
-	// 	;
-	// }
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+
+	int simulation_running = 1;
+    SDL_Event event;
+    while (simulation_running) {
+        while(SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) simulation_running = 0;
+            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) simulation_running = 0;
+        }
+		cycle(&emulator);
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+		SDL_RenderClear(renderer);
+
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+		for (int i = 0; i < 64 * 32; i++) {
+			if (emulator.screen[i]) {
+				SDL_Rect rect = {
+					(i % 64) * SCALE,
+					(i / 64) * SCALE,
+					SCALE, SCALE
+				};
+				SDL_RenderFillRect(renderer, &rect);
+			}
+		}
+
+		SDL_RenderPresent(renderer);
+
+		}
+
+	return 0;
 }
