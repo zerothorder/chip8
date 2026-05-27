@@ -1,0 +1,24 @@
+# ===== C/C++ Build =====
+*.o
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.exe
+*.out
+
+
+# ===== SDL2 =====
+src/
+*.dll
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.suo
+*.user
+
+# ===== OS =====
+Thumbs.db
+desktop.ini
