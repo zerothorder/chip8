@@ -118,15 +118,20 @@ void cycle(Chip8 *emu) {
 				uint8_t spriteByte = emu->memory[emu->indexRegister + row];
 
 				for (int col = 0; col < 8; col++) {
-					// check if this bit is set in spriteByte
+					//check if this bit is set in spriteByte
 					uint8_t spritePixel = spriteByte & (0x80 >> col);
-					// find the screen pixel position
+					//find the screen pixel position
 					uint8_t xPOS = emu->registers[X] + col;
 					uint8_t yPOS = emu->registers[Y] + row;
 					const unsigned int index = yPOS * 64 + xPOS; 
+					
+					//DXYN clipping
+					if(xPOS>=64 || yPOS >=32) {
+						continue;
+					}
 
 					if(spritePixel) {
-						// check for collision -> set VF
+						//check for collision - set VF
 						if (emu->screen[index]) {
 							emu->registers[0xF] = 1;
 						}
