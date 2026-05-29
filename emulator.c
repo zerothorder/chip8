@@ -82,18 +82,33 @@ void cycle(Chip8 *emu) {
 				case 0xE0: //cls - clear display
 					memset(emu->screen, 0, sizeof(emu->screen));
 					break;
+				case 0xEE: //ret - return from subroutine
+					--emu->stackPointer;
+					emu->programCounter = emu->stack[emu->stackPointer];
 			}
 			break;
 		case 0x1000:
 			emu->programCounter = NNN;
 			break;
-		case 0x2000:
+		case 0x2000: //call sub routine at NNN
+			emu->stack[emu->stackPointer] = emu->programCounter; 
+			emu->stackPointer++;
+			emu->programCounter = NNN;
 			break;
-		case 0x3000:
+		case 0x3000: //Skip next instruction if Vx = NN.
+			if(emu->registers[X] == NN) {
+				emu->programCounter += 2;
+			}
 			break;
-		case 0x4000:
+		case 0x4000: //Skip next instruction if Vx != NN.
+			if(emu->registers[X] != NN) {
+				emu->programCounter += 2;
+			}
 			break;
-		case 0x5000:
+		case 0x5000: //skip if Vx = Vy
+			if(emu->registers[X] == emu->registers[Y]) {
+				emu->programCounter += 2;
+			}
 			break;
 		case 0x6000:
 			emu->registers[X] = NN;
@@ -102,8 +117,62 @@ void cycle(Chip8 *emu) {
 			emu->registers[X] += NN;
 			break;
 		case 0x8000:
+			switch(N) {
+				case 0x0: //set
+					emu->registers[X] = emu->registers[Y];
+					break; 
+				case 0x1: //binary OR
+					emu->registers[X] |= emu->registers[Y];
+					break; 
+				case 0x2: //binary AND
+					emu->registers[X] &= emu->registers[Y];
+					break;
+				case 0x3: //logical XOR
+					emu->registers[X] ^= emu->registers[Y];
+					break;
+				case 0x4: //add
+				{
+					uint16_t sum = emu->registers[X] + emu->registers[Y];
+					emu->registers[X] = sum;
+					emu->registers[0xF] = (sum > 0xFF) ? 1 : 0;
+					break;
+				}
+				case 0x5: //subtract
+				{
+					uint8_t vx = emu->registers[X];
+					uint8_t vy = emu->registers[Y];
+					emu->registers[X] = vx - vy;
+					emu->registers[0xF] = (vx >= vy) ? 1 : 0;
+					break;
+				}
+				case 0x6: 
+				{
+					uint8_t lsb = emu->registers[Y] & 0x1;
+					emu->registers[X] = emu->registers[Y] >> 1;
+					emu->registers[0xF] = lsb;
+					break;
+				}
+				case 0x7: //reverse difference of 0x5
+				{
+					uint8_t vx = emu->registers[X];
+					uint8_t vy = emu->registers[Y];
+					emu->registers[X] = vy - vx;
+					emu->registers[0xF] = (vy >= vx) ? 1 : 0;
+					break;
+				}	
+				case 0xE:
+				{
+					uint8_t msb = (emu->registers[Y] >> 7) & 0x01;
+					emu->registers[X] = emu->registers[Y] << 1;
+					emu->registers[0xF] = msb;
+					break;
+				}
+			}
 			break;
-		case 0x9000:
+		case 0x9000: //skip if Vx != Vy
+			if(emu->registers[X] != emu->registers[Y]) {
+				emu->programCounter += 2;
+			}
 			break;
 		case 0xA000:
 			emu->indexRegister = NNN;
