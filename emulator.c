@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <SDL2/SDL.h>
+#include <stdlib.h>
 #define SDL_MAIN_HANDLED
 #define SCALE 20
 
@@ -177,10 +178,14 @@ void cycle(Chip8 *emu) {
 		case 0xA000:
 			emu->indexRegister = NNN;
 			break;
-		case 0xB000:
+		case 0xB000: //Jump with offset
+			emu->programCounter = NNN + emu->registers[0];
 			break;
-		case 0xC000:
+		case 0xC000: //random
+		{	
+			emu->registers[X] = (rand() % 256) & NN;
 			break;
+		}
 		case 0xD000: {
 			emu->registers[0xF] = 0;
 			for (int row = 0; row < N; row++) {
@@ -212,8 +217,75 @@ void cycle(Chip8 *emu) {
 			break;
 		}
 		case 0xE000:
+			switch(NN) {
+				case 0x9E:
+					break;
+				case 0xA1:
+					break;
+			}
 			break;
 		case 0xF000:
+			switch(NN) {
+				case 0x07:
+					emu->registers[X] = emu->delayTimer;
+					break;
+				case 0x0A:
+				{
+					int keyFound = -1;
+					for (int i = 0; i < 16; i++) {
+						if (emu->keys[i]) {
+							keyFound = i;
+							break;
+						}
+					}
+					if (keyFound == -1) {
+						emu->programCounter -= 2; 
+					} else {
+						emu->registers[X] = keyFound;
+					}
+					break;
+				}
+					break;
+				case 0x15:
+					emu->delayTimer = emu->registers[X];
+					break;
+				case 0x18:
+					emu->soundTimer = emu->registers[X];
+					break;
+				case 0x1E:
+					emu->indexRegister += emu->registers[X];
+					break;
+				case 0x29:
+					emu->indexRegister = FONTSET_START_ADDRESS + (emu->registers[X] & 0xF) * 5;
+					break;
+				case 0x33:
+				{
+					uint8_t value = emu->registers[X];
+					//Ones-place
+					emu->memory[emu->indexRegister + 2] = value % 10;
+					value /= 10;
+
+					//Tens-place
+					emu->memory[emu->indexRegister + 1] = value % 10;
+					value /= 10;
+
+					//Hundreds-place
+					emu->memory[emu->indexRegister] = value % 10;
+					break;
+				}
+				case 0x55:
+				{
+					for(int i = 0; i <= X; i++) {
+						emu->memory[emu->indexRegister + i] = emu->registers[i];
+					}
+					break;
+				}
+				case 0x65:
+					for(int i = 0; i <= X; i++) {
+						emu->registers[i] = emu->memory[emu->indexRegister + i];
+					}
+					break;
+			}
 			break;
 
 	}
@@ -222,6 +294,7 @@ void cycle(Chip8 *emu) {
 
 int main(int argc, char* argv[]) {
 	Chip8 emulator;
+	srand(time(NULL));
 	init(&emulator);
 	loadROM(&emulator, argv[1]);
 
