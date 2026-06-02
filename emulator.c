@@ -4,7 +4,7 @@
 #include <time.h>
 #include <stdlib.h>
 #define SDL_MAIN_HANDLED
-#define SCALE 20
+#define SCALE 15
 
 typedef struct Chip8 {
     uint8_t memory[4096];
@@ -152,8 +152,8 @@ void cycle(Chip8 *emu) {
 				}
 				case 0x6: 
 				{
-					uint8_t lsb = emu->registers[Y] & 0x1;
-					emu->registers[X] = emu->registers[Y] >> 1;
+					uint8_t lsb = emu->registers[X] & 0x1;
+					emu->registers[X] >>= 1;
 					emu->registers[0xF] = lsb;
 					break;
 				}
@@ -167,8 +167,8 @@ void cycle(Chip8 *emu) {
 				}	
 				case 0xE:
 				{
-					uint8_t msb = (emu->registers[Y] >> 7) & 0x01;
-					emu->registers[X] = emu->registers[Y] << 1;
+					uint8_t msb = (emu->registers[X] >> 7) & 0x01;
+					emu->registers[X] <<= 1;
 					emu->registers[0xF] = msb;
 					break;
 				}
