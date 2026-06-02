@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <SDL2/SDL.h>
+#include <time.h>
 #include <stdlib.h>
 #define SDL_MAIN_HANDLED
 #define SCALE 20
@@ -124,12 +125,15 @@ void cycle(Chip8 *emu) {
 					break; 
 				case 0x1: //binary OR
 					emu->registers[X] |= emu->registers[Y];
+					emu->registers[0xF] = 0;
 					break; 
 				case 0x2: //binary AND
 					emu->registers[X] &= emu->registers[Y];
+					emu->registers[0xF] = 0;
 					break;
 				case 0x3: //logical XOR
 					emu->registers[X] ^= emu->registers[Y];
+					emu->registers[0xF] = 0;
 					break;
 				case 0x4: //add
 				{
@@ -219,8 +223,14 @@ void cycle(Chip8 *emu) {
 		case 0xE000:
 			switch(NN) {
 				case 0x9E:
+					if(emu->keys[emu->registers[X] & 0xF]) {
+						emu->programCounter += 2;
+					}
 					break;
 				case 0xA1:
+					if(!emu->keys[emu->registers[X] & 0xF]) {
+						emu->programCounter += 2;
+					}
 					break;
 			}
 			break;
@@ -292,6 +302,28 @@ void cycle(Chip8 *emu) {
 
 }
 
+int mapKey(SDL_Keycode key) {
+    switch(key) {
+        case SDLK_1: return 0x1;
+        case SDLK_2: return 0x2;
+        case SDLK_3: return 0x3;
+        case SDLK_4: return 0xC;
+        case SDLK_q: return 0x4;
+        case SDLK_w: return 0x5;
+        case SDLK_e: return 0x6;
+        case SDLK_r: return 0xD;
+        case SDLK_a: return 0x7;
+        case SDLK_s: return 0x8;
+        case SDLK_d: return 0x9;
+        case SDLK_f: return 0xE;
+        case SDLK_z: return 0xA;
+        case SDLK_x: return 0x0;
+        case SDLK_c: return 0xB;
+        case SDLK_v: return 0xF;
+        default: return -1;
+    }
+}
+
 int main(int argc, char* argv[]) {
 	Chip8 emulator;
 	srand(time(NULL));
@@ -310,10 +342,27 @@ int main(int argc, char* argv[]) {
     SDL_Event event;
     while (simulation_running) {
         while(SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) simulation_running = 0;
-            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) simulation_running = 0;
+			switch(event.type) {
+				case SDL_QUIT:
+					simulation_running = 0;
+					break;
+				case SDL_KEYDOWN: {
+					if(event.key.keysym.sym == SDLK_ESCAPE) simulation_running = 0;
+					int k = mapKey(event.key.keysym.sym);
+					if(k != -1) emulator.keys[k] = 1;
+					break;
+				}
+				case SDL_KEYUP: {
+				
+					int k = mapKey(event.key.keysym.sym);
+					if(k != -1) emulator.keys[k] = 0;
+					break;
+				}
         }
+	}
 		cycle(&emulator);
+		if(emulator.delayTimer > 0) emulator.delayTimer--;
+		if(emulator.soundTimer > 0) emulator.soundTimer--;
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderClear(renderer);
 
