@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #define SDL_MAIN_HANDLED
 #define SCALE 15
+#define CYCLES_PER_FRAME 11
 
 typedef struct Chip8 {
     uint8_t memory[4096];
@@ -360,7 +361,9 @@ int main(int argc, char* argv[]) {
 				}
         }
 	}
+	for(int i = 0; i < CYCLES_PER_FRAME; i++) {
 		cycle(&emulator);
+	}
 		if(emulator.delayTimer > 0) emulator.delayTimer--;
 		if(emulator.soundTimer > 0) emulator.soundTimer--;
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -380,6 +383,7 @@ int main(int argc, char* argv[]) {
 
 		SDL_RenderPresent(renderer);
 
+		SDL_Delay(16);
 		}
 
 	return 0;
